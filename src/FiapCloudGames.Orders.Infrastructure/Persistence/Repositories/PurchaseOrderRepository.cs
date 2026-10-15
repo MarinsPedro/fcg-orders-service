@@ -1,0 +1,25 @@
+﻿namespace FiapCloudGames.Orders.Infrastructure.Persistence.Repositories;
+
+internal sealed class PurchaseOrderRepository(OrdersDbContext dbContext) : IPurchaseOrderRepository
+{
+    // TODO: quais recursos vão ser necessários de operação de banco aqui.
+
+    public async Task AddAsync(PurchaseOrder purchaseOrder, CancellationToken cancellationToken)
+    {
+        // TODO: talvez não precisa utilizar esse transaction aqui.
+
+        using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        await dbContext.PurchaseOrders.AddAsync(purchaseOrder, cancellationToken);
+        
+        await dbContext.PurchaseOrderItems.AddRangeAsync(purchaseOrder.Items, cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<PurchaseOrder?> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await dbContext.PurchaseOrders.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return result;
+    }
+}

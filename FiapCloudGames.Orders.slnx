@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FiapCloudGames.Orders.Api/FiapCloudGames.Orders.Api.csproj" />
+    <Project Path="src/FiapCloudGames.Orders.Application/FiapCloudGames.Orders.Application.csproj" />
+    <Project Path="src/FiapCloudGames.Orders.Domain/FiapCloudGames.Orders.Domain.csproj" Id="33e6601b-ff20-412e-8795-948473500406" />
+    <Project Path="src/FiapCloudGames.Orders.Infrastructure/FiapCloudGames.Orders.Infrastructure.csproj" Id="1bd934b4-1f7e-4b6a-ad09-7574878e1344" />
+    <Project Path="src/FiapCloudGames.Orders.Migrations/FiapCloudGames.Orders.Migrations.csproj" Id="6fc18d11-ba76-4d73-b5ff-5ea96323a669" />
+    <Project Path="src/FiapCloudGames.Orders.Presentation/FiapCloudGames.Orders.Presentation.csproj" Id="93b45fb1-2332-4232-8b3f-079826deee5c" />
+  </Folder>
+</Solution>
