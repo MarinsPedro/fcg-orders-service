@@ -2,5 +2,5 @@
 
 public sealed record CreatePurchaseOrderInput(
     Guid CustomerId,
-    IEnumerable<PurchaseOrderItemInput> items);
+    IEnumerable<CreatePurchaseOrderItemInput> items);
 
