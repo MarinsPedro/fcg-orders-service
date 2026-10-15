@@ -16,8 +16,8 @@ public class PurchaseOrderItem
     {
         Id = id;
         ProductId = productId;
-        BasePrice = basePrice;
-        FinalPrice = finalPrice;
+        BasePrice = PurchasePrice.Create(basePrice);
+        FinalPrice = PurchasePrice.Create(finalPrice);
         PromotionId = promotionId;
     }
 
@@ -39,12 +39,12 @@ public class PurchaseOrderItem
     /// <summary>
     /// O preço do produto (o jogo) no ato da compra.
     /// </summary>
-    public decimal BasePrice { get; private set; }
+    public PurchasePrice BasePrice { get; private set; }
 
     /// <summary>
     /// Preço final do jogo no ato da compra.
     /// </summary>
-    public decimal FinalPrice { get; private set; }
+    public PurchasePrice FinalPrice { get; private set; }
 
     /// <summary>
     /// O ID da promoção que pode ser informada ou não.
