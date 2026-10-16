@@ -1,3 +1,9 @@
 ﻿global using FiapCloudGames.BuildingBlocks.Authentication;
+global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.ChangeStatus;
+global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
+global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Get;
 global using FiapCloudGames.Orders.Presentation.Authorization;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.Extensions.DependencyInjection;
+global using System.ComponentModel.DataAnnotations;

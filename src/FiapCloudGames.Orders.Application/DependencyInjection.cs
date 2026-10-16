@@ -4,7 +4,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddOrdersApplication(this IServiceCollection services)
     {
-        // TODO: incluir os serviços crud aqui.
+        services.AddScoped<ChangeStatusPurchaseOrderService>();
+        services.AddScoped<CreatePurchaseOrderService>();
+        services.AddScoped<GetPurchaseOrderService>();
 
         return services;
     }

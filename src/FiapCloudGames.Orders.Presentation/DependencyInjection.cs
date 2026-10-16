@@ -15,25 +15,19 @@ public static class DependencyInjection
                 policy => policy
                     .RequireAuthenticatedUser()
                     .RequireServiceToken()
-                    .RequireClaim(FiapClaimTypes.Scope, "orders.purchaseorder.create"));
+                    .RequireScopes("orders.purchaseorder.create"));
             options.AddPolicy(
                 OrdersPolicies.PurchaseOrderRead,
                 policy => policy
                     .RequireAuthenticatedUser()
                     .RequireServiceToken()
-                    .RequireClaim(FiapClaimTypes.Scope, "orders.purchaseorder.read"));
+                    .RequireScopes("orders.purchaseorder.read"));
             options.AddPolicy(
                 OrdersPolicies.PurchaseOrderWrite,
                 policy => policy
                     .RequireAuthenticatedUser()
                     .RequireServiceToken()
-                    .RequireClaim(FiapClaimTypes.Scope, "orders.purchaseorder.write"));
-            options.AddPolicy(
-                OrdersPolicies.AuditRead,
-                policy => policy
-                    .RequireAuthenticatedUser()
-                    .RequireServiceToken()
-                    .RequireClaim(FiapClaimTypes.Scope, "orders.purchaseorder.read"));
+                    .RequireScopes("orders.purchaseorder.write"));
         });
 
         return services;

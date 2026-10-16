@@ -1,8 +1,7 @@
 ﻿namespace FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
 
-public sealed record CreatePurchaseOrderItemInput(
+public sealed record CreatePurchaseOrderItemsInput(
     Guid ProductId,
-    decimal BasePrice,
     decimal FinalPrice,
     Guid? PromotionId);
 

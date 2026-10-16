@@ -3,5 +3,4 @@
 public sealed record PurchaseOrderResult(
     Guid Id,
     Guid CustomerId,
-    DateTimeOffset createdAtUtc);
-
+    DateTimeOffset CreatedAtUtc);

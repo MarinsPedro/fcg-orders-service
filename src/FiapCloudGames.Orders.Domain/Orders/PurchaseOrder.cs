@@ -1,4 +1,6 @@
-﻿namespace FiapCloudGames.Orders.Domain.Orders;
+﻿using System.Net.NetworkInformation;
+
+namespace FiapCloudGames.Orders.Domain.Orders;
 
 /// <summary>
 /// Representa o cabeçalho da ordem de compra.
@@ -24,7 +26,12 @@ public sealed class PurchaseOrder
     public PurchaseOrderStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
     public DateTimeOffset? UpdatedAtUtc { get; private set; }
+
+    #region Naviations
+
     public IEnumerable<PurchaseOrderItem> Items { get; private set; } = Enumerable.Empty<PurchaseOrderItem>();
+
+    #endregion
 
     public static PurchaseOrder Create(
         Guid customerId,
@@ -47,19 +54,23 @@ public sealed class PurchaseOrder
             ? updatedUtc
             : throw new DomainRuleViolationException("A data de atualização da ordem de compra deve estar em UTC.");
 
-
     public void ChangeStatus(PurchaseOrderStatus status, DateTimeOffset updatedAtUtc)
     {
-        if (status == PurchaseOrderStatus.OrderCompleted)
+        ValidationStatus(status);
+        Status = status;
+        UpdatedAtUtc = ValidateUpdatedAt(updatedAtUtc);
+    }
+
+    private void ValidationStatus(PurchaseOrderStatus status)
+    {
+        // TODO: corrigir as regras, incluir a comparação com a situação no banco.
+        if (status == PurchaseOrderStatus.OrderCompleted && Status == PurchaseOrderStatus.UserCncelled)
             throw new DomainRuleViolationException($"Não é possível alterar o estado da ordem com situação {PurchaseOrderStatus.OrderCompleted.GetDisplayName()}");
 
         if (status == PurchaseOrderStatus.Failed)
             throw new DomainRuleViolationException($"Não é possível alterar o estado da ordem com situação {PurchaseOrderStatus.Failed.GetDisplayName()}");
 
-        if (status == PurchaseOrderStatus.UserCncelled)
+        if (status == PurchaseOrderStatus.UserCncelled && Status == PurchaseOrderStatus.PaymentApproved)
             throw new DomainRuleViolationException($"Não é possível alterar o estado da ordem com situação {PurchaseOrderStatus.UserCncelled.GetDisplayName()}");
-
-        Status = status;
-        UpdatedAtUtc = ValidateUpdatedAt(updatedAtUtc);
     }
 }

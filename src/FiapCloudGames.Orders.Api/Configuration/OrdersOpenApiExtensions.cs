@@ -23,7 +23,7 @@ internal static class OrdersOpenApiExtensions
                     Type = SecuritySchemeType.Http,
                     Scheme = "bearer",
                     BearerFormat = "JWT",
-                    Description = "Informe somente o JWT, sem o prefixo Bearer."
+                    Description = "Informe somente o access token service, sem o prefixo Bearer."
                 });
 
             options.AddSecurityRequirement(document =>
