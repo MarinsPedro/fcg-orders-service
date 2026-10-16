@@ -19,4 +19,9 @@ app.MapControllers();
 
 await app.RunAsync();
 
-public partial class Program;
+public partial class Program
+{
+    // Fornece um construtor de instância protegido para que a classe não seja considerada "apenas estática",
+    // mas ainda assim não possa ser instanciada publicamente (útil para testes de integração que expõem a classe Program).
+    protected Program() { }
+}
