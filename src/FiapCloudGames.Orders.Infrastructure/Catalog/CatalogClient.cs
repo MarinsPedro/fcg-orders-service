@@ -8,7 +8,7 @@ internal sealed class CatalogClient(
 {
     private readonly CatalogApiOptions options = configuredOptions.Value;
 
-    public async Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         // O Building Blocks consulta o Discovery do Identity na primeira vez,
         // pede o token por Client Credentials e reutiliza o token em memória.

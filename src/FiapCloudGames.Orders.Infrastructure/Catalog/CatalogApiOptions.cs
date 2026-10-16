@@ -6,7 +6,7 @@ internal sealed class CatalogApiOptions
 
     [Required]
     [Url]
-    public string BaseAddess { get; set; } = string.Empty;
+    public string BaseAddress { get; set; } = string.Empty;
 
     [Required]
     public string Audience { get; set; } = string.Empty;

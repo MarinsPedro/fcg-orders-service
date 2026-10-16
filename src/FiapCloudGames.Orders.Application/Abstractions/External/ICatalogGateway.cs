@@ -2,7 +2,7 @@
 
 public interface ICatalogGateway //TODO: talvez um nome seja ICatalogClient
 {
-    Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public sealed record Game(

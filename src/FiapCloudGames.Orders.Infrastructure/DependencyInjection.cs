@@ -23,10 +23,6 @@ public static class DependencyInjection
 
         services.AddFiapServiceTokenProvider(configuration);
 
-        //var baseAddress = configuration.GetSection("CatalogApi:BaseAddress").Value ?? "não carregado.";
-        //var audience = configuration.GetSection("CatalogApi:Audience").Value ?? "não carregado.";
-        //var scopes = configuration.GetSection("CatalogApi:Scopes").Value ?? "não carregado.";
-
         services.AddOptions<CatalogApiOptions>()
             .Bind(configuration.GetSection(CatalogApiOptions.SectionName))
             .ValidateDataAnnotations()
@@ -36,7 +32,7 @@ public static class DependencyInjection
             .AddHttpClient<ICatalogGateway, CatalogClient>((provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<CatalogApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseAddess);
+                client.BaseAddress = new Uri(options.BaseAddress);
                 client.Timeout = TimeSpan.FromSeconds(10);
             })
             .AddFiapCorrelationPropagation();
