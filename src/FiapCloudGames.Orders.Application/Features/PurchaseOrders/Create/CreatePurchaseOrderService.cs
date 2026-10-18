@@ -13,19 +13,25 @@ public sealed class CreatePurchaseOrderService(
     {
         logger.LogInformation("Gerando ordem de compra.");
 
-        var purchaseOrderItems = input.items
-            .Select(purchaseOrderItems => PurchaseOrderItem
-                .Create(
-                    purchaseOrderItems.ProductId,
-                    catalogGateway.GetGameByIdAsync(purchaseOrderItems.ProductId, cancellationToken).Result.BasePrice, // Workaround.
-                    purchaseOrderItems.FinalPrice, // ms Promotions
-                    purchaseOrderItems.PromotionId // ms Promotions
-                )
-            );
+        //1. Mapeando os objetos input para domínio.
+        var purchaseOrderItems = await Task.WhenAll
+            (
+                input.items
+                .Select(async purchaseOrderItems =>
+                {
+                    var game = await catalogGateway.GetGameByIdAsync(purchaseOrderItems.ProductId, cancellationToken);
+                    return PurchaseOrderItem.Create(
+                        purchaseOrderItems.ProductId,
+                        game.BasePrice,
+                        purchaseOrderItems.FinalPrice,   // ms Promotions
+                        purchaseOrderItems.PromotionId); // ms Promotions
+                })
+            ) as IEnumerable<PurchaseOrderItem>;
 
+        // 2. crio o objeto.s
         var purchaseOrder = PurchaseOrder.Create(input.CustomerId, purchaseOrderItems, clock.GetUtcNow());
 
-        // Workaround para vincular o número da ordem da compra a cada item da compra.
+        // 3. Workaround para vincular o número da ordem da compra a cada item da compra.
         foreach (var item in purchaseOrder.Items)
             item.BindItemsToPurchaseOrder(purchaseOrder.Id);
 
