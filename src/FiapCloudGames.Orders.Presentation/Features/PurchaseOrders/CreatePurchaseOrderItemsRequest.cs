@@ -2,5 +2,5 @@
 
 public sealed record CreatePurchaseOrderItemsRequest(
     [Required] Guid ProductId,
-    [Required] Guid PromotionId);
+    Guid? PromotionId);
 
