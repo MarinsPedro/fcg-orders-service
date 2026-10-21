@@ -2,6 +2,5 @@
 
 public sealed record CreatePurchaseOrderItemsInput(
     Guid ProductId,
-    decimal FinalPrice,
     Guid? PromotionId);
 
