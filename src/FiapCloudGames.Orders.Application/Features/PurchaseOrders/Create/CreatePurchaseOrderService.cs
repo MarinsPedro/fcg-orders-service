@@ -28,15 +28,22 @@ public sealed class CreatePurchaseOrderService(
         var purchaseOrderItems = await Task.WhenAll(
             libraryResults
                 .Where(result => !result.Library.Exists)
+                .DistinctBy(x => x.Item.ProductId)
                 .Select(async result =>
                 {
                     var item = result.Item;
                     var game = await catalogGateway.GetGameByIdAsync(item.ProductId, cancellationToken);
 
+                    CheckGame(result.Item, game);
+
                     CalculatePromotion calculatedPromotion = new(0);
 
                     if (item.PromotionId is not null)
                     {
+                        var promotion = await promotionsGateway.GetByIdAsync(item.PromotionId.Value, cancellationToken);
+
+                        CheckPromotions(result.Item, promotion);
+
                         calculatedPromotion = await promotionsGateway
                             .PostCalcularDescontoAsync(
                                 item.PromotionId.Value,
@@ -81,5 +88,23 @@ public sealed class CreatePurchaseOrderService(
             purchaseOrder.CreatedAtUtc.ToString("HH:mm:ss.fff"));
 
         return OrdersApplicationMappings.ToResult(purchaseOrder);
+    }
+
+    private static void CheckGame(CreatePurchaseOrderItemsInput item, Game game)
+    {
+        if (game is null)
+            throw AppException.Conflict($"Não foi localizado um jogo com o ID {item.ProductId}");
+
+        if (!game.IsActive)
+            throw AppException.Conflict($"O jogo ID {item.ProductId} não está ativo.");
+    }
+
+    private static void CheckPromotions(CreatePurchaseOrderItemsInput item, Promotion promotion)
+    {
+        if (promotion is null)
+            throw AppException.Conflict($"Não foi localizado uma promoção com o ID {item.PromotionId!.Value}");
+
+        if (!promotion.IsActive)
+            throw AppException.Conflict($"A promoção ID {item.PromotionId!.Value} não está ativa.");
     }
 }

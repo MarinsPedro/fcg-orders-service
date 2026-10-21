@@ -38,10 +38,59 @@ internal sealed class PromotionsClient(
 
         if (apiResponse is null)
         {
-            throw new HttpRequestException("A API Promotions retornou uma resposta inválida.");
+            throw new HttpRequestException($"A API Promotions retornou com status {(int)response.StatusCode}.");
         }
 
         return new CalculatePromotion(apiResponse.FinalPrice);
     }
+
+    public async Task<Promotion> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var accessToken = await tokenProvider.GetAccessTokenAsync(
+            options.Audience,
+            options.Scopes,
+            cancellationToken);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"internal/v1/promotions/{id}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var response = await httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException(
+                $"A API Promotions respondeu com status {(int)response.StatusCode}.",
+                inner: null,
+                response.StatusCode);
+        }
+
+        var apiResponse = await response.Content.ReadFromJsonAsync<PromotionResponse>(cancellationToken);
+
+        if (apiResponse is null
+            || apiResponse.Id == Guid.Empty
+            || string.IsNullOrWhiteSpace(apiResponse.Name)
+            || string.IsNullOrWhiteSpace(apiResponse.DiscountType))
+        {
+            throw new HttpRequestException("A API Category retornou uma resposta inválida.");
+        }
+
+        return new Promotion(
+            apiResponse.Id,
+            apiResponse.Name,
+            apiResponse.DiscountType,
+            apiResponse.DiscountValue,
+            apiResponse.IsActive);
+    }
+
     private sealed record CalculatePromotionResponse(decimal FinalPrice);
+
+    private sealed record PromotionResponse(
+        Guid Id,
+        string Name,
+        string DiscountType,
+        decimal DiscountValue,
+        bool IsActive);
 }
