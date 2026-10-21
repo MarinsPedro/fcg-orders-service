@@ -1,6 +1,4 @@
-﻿using System.Net.NetworkInformation;
-
-namespace FiapCloudGames.Orders.Domain.Orders;
+﻿namespace FiapCloudGames.Orders.Domain.Orders;
 
 /// <summary>
 /// Representa o cabeçalho da ordem de compra.
@@ -19,6 +17,7 @@ public sealed class PurchaseOrder
         CustomerId = customerId;
         Status = PurchaseOrderStatus.Received;
         CreatedAtUtc = ValidateCreatedAt(createdAtUtc);
+        Items = itens;
     }
 
     public Guid Id { get; private set; }

@@ -1,6 +1,4 @@
-﻿using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
-
-namespace FiapCloudGames.Orders.Presentation.Features.PurchaseOrders;
+﻿namespace FiapCloudGames.Orders.Presentation.Features.PurchaseOrders;
 
 internal static class CreatePurchaseOrderItemsHttpMappings
 {

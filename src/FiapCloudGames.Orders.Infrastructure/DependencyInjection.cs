@@ -28,14 +28,26 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services
-            .AddHttpClient<ICatalogGateway, CatalogClient>((provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<CatalogApiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseAddress);
-                client.Timeout = TimeSpan.FromSeconds(10);
-            })
-            .AddFiapCorrelationPropagation();
+        services.AddOptions<PromotionsApiOptions>()
+            .Bind(configuration.GetSection(PromotionsApiOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHttpClient<ICatalogGateway, CatalogClient>((provider, client) =>
+        {
+            var options = provider.GetRequiredService<IOptions<CatalogApiOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseAddress);
+            client.Timeout = TimeSpan.FromSeconds(300); // 10
+        })
+        .AddFiapCorrelationPropagation();
+
+        services.AddHttpClient<IPromotionsGateway, PromotionsClient>((provider, client) =>
+        {
+            var options = provider.GetRequiredService<IOptions<PromotionsApiOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseAddress);
+            client.Timeout = TimeSpan.FromSeconds(300);
+        })
+        .AddFiapCorrelationPropagation();
 
         #endregion
 

@@ -1,6 +1,6 @@
 ﻿namespace FiapCloudGames.Orders.Application.Abstractions.External;
 
-public interface ICatalogGateway //TODO: talvez um nome seja ICatalogClient
+public interface ICatalogGateway
 {
     Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

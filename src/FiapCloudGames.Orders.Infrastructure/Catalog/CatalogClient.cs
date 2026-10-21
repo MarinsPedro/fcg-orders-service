@@ -17,7 +17,7 @@ internal sealed class CatalogClient(
             options.Scopes,
             cancellationToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, "v1/games");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"v1/games/{id}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         using var response = await httpClient.SendAsync(
