@@ -7,7 +7,7 @@ public class PurchaseOrderController : ControllerBase
     private const string GetByIdRoute = "Orders.PurchaseOrder.GetByIdAsync";
 
     [Authorize(Policy = OrdersPolicies.PurchaseOrderRead)]
-    [HttpGet(Name = GetByIdRoute)]
+    [HttpGet("{id:guid}",Name = GetByIdRoute)]
     public async Task<ActionResult<PurchaseOrderResponse>> GetByIdAsync(
         [FromRoute] Guid id,
         [FromServices] GetPurchaseOrderService service,
