@@ -4,6 +4,7 @@ public sealed class CreatePurchaseOrderService(
     IPurchaseOrderRepository purchaseOrderRepository,
     ICatalogGateway catalogGateway,
     IPromotionsGateway promotionsGateway,
+    ILibraryGateway libraryGateway,
     IOrdersUnitOfWork unitOfWork,
     TimeProvider clock,
     ILogger<CreatePurchaseOrderService> logger)
@@ -12,42 +13,87 @@ public sealed class CreatePurchaseOrderService(
         CreatePurchaseOrderInput input,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Gerando ordem de compra.");
+        // 1. Consulta a api externa Library pra verificar se os jogos já constam na biblioteca do usuário.
+        var libraryResults = await Task.WhenAll(
+            input.items.Select(async item => new
+            {
+                Item = item,
+                Library = await libraryGateway.CheckGameExistsOnLibraryAsync(
+                    input.CustomerId,
+                    item.ProductId,
+                    cancellationToken)
+            })
+        );
 
-        //1. Mapeando os objetos de input para domínio.
+        // 2. Mapeando os objetos de input para domínio e aplicando consultas as API Catalog e Promotions.
+        //var purchaseOrderItems = await Task.WhenAll(
+        //    libraryResults
+        //        .Where(result => result.Library.Exists)
+        //        .Select(async result =>
+        //        {
+        //            var item = result.Item;
+
+        //            var game = await catalogGateway.GetGameByIdAsync(
+        //                item.ProductId,
+        //                cancellationToken);
+
+        //            CalculatePromotion calculatedPromotion = new(0);
+
+        //            if (item.PromotionId is not null)
+        //            {
+        //                calculatedPromotion = await promotionsGateway
+        //                    .PostCalcularDescontoAsync(
+        //                        item.PromotionId.Value,
+        //                        item.ProductId,
+        //                        game.BasePrice,
+        //                        cancellationToken);
+        //            }
+
+        //            var finalPrice = item.PromotionId is null
+        //                ? game.BasePrice
+        //                : calculatedPromotion.FinalPrice;
+
+        //            return PurchaseOrderItem.Create(
+        //                item.ProductId,
+        //                game.BasePrice,
+        //                finalPrice,
+        //                item.PromotionId);
+        //        })) as IEnumerable<PurchaseOrderItem>;
+
         var purchaseOrderItems = await Task.WhenAll
-            (
-                input.items
-                .Select(async purchaseOrderItems =>
-                {
-                    var game = await catalogGateway.GetGameByIdAsync(purchaseOrderItems.ProductId, cancellationToken);
-                    CalculatePromotion calculatedPromotion = new(0);
+        (
+            input.items
+            .Select(async purchaseOrderItems =>
+            {
+                var game = await catalogGateway.GetGameByIdAsync(purchaseOrderItems.ProductId, cancellationToken);
+                CalculatePromotion calculatedPromotion = new(0);
 
-                    // Somente faz o cálculo se um jogo possuir campanha de promoção.
-                    if (purchaseOrderItems.PromotionId is not null)
-                        calculatedPromotion = await promotionsGateway
-                            .PostCalcularDescontoAsync(purchaseOrderItems.PromotionId.Value, purchaseOrderItems.ProductId, game.BasePrice, cancellationToken);
+                // Somente faz o cálculo se um jogo possuir campanha de promoção.
+                if (purchaseOrderItems.PromotionId is not null)
+                    calculatedPromotion = await promotionsGateway
+                        .PostCalcularDescontoAsync(purchaseOrderItems.PromotionId.Value, purchaseOrderItems.ProductId, game.BasePrice, cancellationToken);
 
-                    var finalPrice = purchaseOrderItems.PromotionId is null
-                        ? game.BasePrice
-                        : calculatedPromotion.FinalPrice;
+                var finalPrice = purchaseOrderItems.PromotionId is null
+                    ? game.BasePrice
+                    : calculatedPromotion.FinalPrice;
 
-                    return PurchaseOrderItem.Create(
-                        purchaseOrderItems.ProductId,
-                        game.BasePrice,
-                        finalPrice,
-                        purchaseOrderItems.PromotionId);
-                })
-            ) as IEnumerable<PurchaseOrderItem>;
+                return PurchaseOrderItem.Create(
+                    purchaseOrderItems.ProductId,
+                    game.BasePrice,
+                    finalPrice,
+                    purchaseOrderItems.PromotionId);
+            })
+        ) as IEnumerable<PurchaseOrderItem>;
 
-        // 2. crio o objeto.
+        // 3. crio o objeto.
         var purchaseOrder = PurchaseOrder.Create(input.CustomerId, purchaseOrderItems, clock.GetUtcNow());
 
-        // 3. Workaround para vincular o número da ordem da compra a cada item da compra.
+        // 4. Workaround para vincular o número da ordem da compra a cada item da compra.
         foreach (var item in purchaseOrder.Items)
             item.BindItemsToPurchaseOrder(purchaseOrder.Id);
 
-        // 4. Gravar a ordem de compra.
+        logger.LogInformation("Gerando ordem de compra.");
+        // 5. Gerando ordem de compra.
         await purchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -33,6 +33,11 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<LibraryApiOptions>()
+            .Bind(configuration.GetSection(LibraryApiOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddHttpClient<ICatalogGateway, CatalogClient>((provider, client) =>
         {
             var options = provider.GetRequiredService<IOptions<CatalogApiOptions>>().Value;
@@ -48,6 +53,12 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(300);
         })
         .AddFiapCorrelationPropagation();
+
+        services.AddHttpClient<ILibraryGateway, LibraryClient>((provider, client) => {
+            var options = provider.GetRequiredService<IOptions<LibraryApiOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseAddress);
+            client.Timeout = TimeSpan.FromSeconds(300);
+        });
 
         #endregion
 

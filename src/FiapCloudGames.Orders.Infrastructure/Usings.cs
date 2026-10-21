@@ -6,6 +6,7 @@ global using FiapCloudGames.Orders.Application.Abstractions.Persistence;
 global using FiapCloudGames.Orders.Domain.Orders;
 global using FiapCloudGames.Orders.Infrastructure.Catalog;
 global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Base;
+global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Library;
 global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Promotions;
 global using FiapCloudGames.Orders.Infrastructure.Health;
 global using FiapCloudGames.Orders.Infrastructure.Persistence;
