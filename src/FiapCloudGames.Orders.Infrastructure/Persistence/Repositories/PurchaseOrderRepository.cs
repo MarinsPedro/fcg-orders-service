@@ -2,8 +2,6 @@
 
 internal sealed class PurchaseOrderRepository(OrdersDbContext dbContext) : IPurchaseOrderRepository
 {
-    // TODO: quais recursos vão ser necessários de operação de banco aqui.
-
     public async Task AddAsync(PurchaseOrder purchaseOrder, CancellationToken cancellationToken)
     {
         await dbContext.PurchaseOrders.AddAsync(purchaseOrder, cancellationToken);
