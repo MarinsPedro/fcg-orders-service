@@ -51,7 +51,7 @@ internal sealed class PromotionsClient(
             options.Scopes,
             cancellationToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"internal/v1/promotions/{id}");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"internal/v1/campaigns/{id}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         using var response = await httpClient.SendAsync(
