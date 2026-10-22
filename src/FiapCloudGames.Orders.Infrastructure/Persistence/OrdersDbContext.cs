@@ -9,5 +9,9 @@ public sealed class OrdersDbContext(DbContextOptions<OrdersDbContext> options) :
     {
         modelBuilder.HasDefaultSchema("orders");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrdersDbContext).Assembly);
+
+        modelBuilder.AddInboxStateEntity(entity => entity.ToTable("inbox_state"));
+        modelBuilder.AddOutboxMessageEntity(entity => entity.ToTable("outbox_message"));
+        modelBuilder.AddOutboxStateEntity(entity => entity.ToTable("outbox_state"));
     }
 }

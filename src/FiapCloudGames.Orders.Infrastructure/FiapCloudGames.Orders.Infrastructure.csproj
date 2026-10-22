@@ -4,6 +4,7 @@
 		<ProjectReference Include="..\FiapCloudGames.Orders.Domain\FiapCloudGames.Orders.Domain.csproj" />
 		<ProjectReference Include="$(LocalBuildingBlocksProject)" Condition="'$(UseLocalBuildingBlocks)' == 'true'" />
 		<PackageReference Include="FiapCloudGames.BuildingBlocks" Condition="'$(UseLocalBuildingBlocks)' != 'true'" />
+		<PackageReference Include="MassTransit.EntityFrameworkCore" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 	</ItemGroup>

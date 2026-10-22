@@ -11,6 +11,7 @@ global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Promotions;
 global using FiapCloudGames.Orders.Infrastructure.Health;
 global using FiapCloudGames.Orders.Infrastructure.Persistence;
 global using FiapCloudGames.Orders.Infrastructure.Persistence.Repositories;
+global using MassTransit;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;
 global using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
