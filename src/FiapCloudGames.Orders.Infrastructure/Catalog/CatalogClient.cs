@@ -25,6 +25,7 @@ internal sealed class CatalogClient(
             HttpCompletionOption.ResponseHeadersRead,
             cancellationToken);
 
+        // TODO: rever este teste, pois tem erros que são na faixa 400..499, e eles não deveria retornar 500...
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(

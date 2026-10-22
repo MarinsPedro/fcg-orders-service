@@ -2,6 +2,7 @@
 global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.ChangeStatus;
 global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
 global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Get;
+global using FiapCloudGames.Orders.Domain.Orders;
 global using FiapCloudGames.Orders.Presentation.Authorization;
 global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Mvc;

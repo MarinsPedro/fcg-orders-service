@@ -13,6 +13,11 @@ public sealed class CreatePurchaseOrderService(
         CreatePurchaseOrderInput input,
         CancellationToken cancellationToken)
     {
+        // TODO: se tiver item repetido devolve informando erro de item repetido.
+        // TODO: se o usuário já tiver o jogo, retorna erro também e não permite emitir a compra.
+
+        // OBS: Se a validação falhar não faz nada, processo atômico, ou faz tudo ou faz nada.
+
         // 1. Consulta a api externa Library pra verificar se os jogos já constam na biblioteca do usuário.
         var libraryResults = await Task.WhenAll(
             input.items.Select(async item => new
@@ -81,30 +86,44 @@ public sealed class CreatePurchaseOrderService(
 
         // 6. Gerando ordem de compra.
         await purchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
+
+        // OBS: Order é o orquestrador de tudo.
+
+        // TODO: 0: (instalar uma imagem do RabbitMQ no docker)
+        // TODO: 1 - await chamando o messtransit pra salvar (messtransit.Publish) o evento indicando que uma ordem de compra foi Recebida.
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // TODO: 2 - order worker (consumer 1 para enviar p/ pagto) fica ouvindo a mensagem publicada no RabbitMQ , quando consumir, dispara uma mensagem para criar um pagamento.
+        // TODO: 3 - order worker (consumer 2 para receber do pagto se sucesso ou não).
 
         logger.LogInformation("Ordem de compra criada em {CreatedAt} as {CreatedAtHour}.",
             purchaseOrder.CreatedAtUtc.ToString("dd/MM/yyyy"),
             purchaseOrder.CreatedAtUtc.ToString("HH:mm:ss.fff"));
 
         return OrdersApplicationMappings.ToResult(purchaseOrder);
+
+        // OBS: toda vez que algum ms bate no Order é um consumer.
+
+        // TODO: depois de tudo, um outro consumer 3 do worker deverá enviar uma mensagem para o Library pra vincular o usário x List<Games>;
     }
 
     private static void CheckGame(CreatePurchaseOrderItemsInput item, Game game)
     {
+        // Tudo que não é do domínio do ms é um BusinessRule;
         if (game is null)
-            throw AppException.Conflict($"Não foi localizado um jogo com o ID {item.ProductId}");
+            throw AppException.BusinessRule($"Não foi localizado um jogo com o ID {item.ProductId}");
 
         if (!game.IsActive)
-            throw AppException.Conflict($"O jogo ID {item.ProductId} não está ativo.");
+            throw AppException.BusinessRule($"O jogo ID {item.ProductId} não está ativo.");
     }
 
     private static void CheckPromotions(CreatePurchaseOrderItemsInput item, Promotion promotion)
     {
         if (promotion is null)
-            throw AppException.Conflict($"Não foi localizado uma promoção com o ID {item.PromotionId!.Value}");
+            throw AppException.BusinessRule($"Não foi localizado uma promoção com o ID {item.PromotionId!.Value}");
 
         if (!promotion.IsActive)
-            throw AppException.Conflict($"A promoção ID {item.PromotionId!.Value} não está ativa.");
+            throw AppException.BusinessRule($"A promoção ID {item.PromotionId!.Value} não está ativa.");
     }
 }
