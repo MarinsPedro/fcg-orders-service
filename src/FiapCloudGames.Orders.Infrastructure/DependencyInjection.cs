@@ -42,7 +42,7 @@ public static class DependencyInjection
         {
             var options = provider.GetRequiredService<IOptions<CatalogApiOptions>>().Value;
             client.BaseAddress = new Uri(options.BaseAddress);
-            client.Timeout = TimeSpan.FromSeconds(300); // 10
+            client.Timeout = TimeSpan.FromSeconds(300); // default 10
         })
         .AddFiapCorrelationPropagation();
 

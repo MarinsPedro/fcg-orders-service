@@ -1,4 +1,4 @@
-﻿namespace FiapCloudGames.Orders.Infrastructure.Catalog;
+﻿namespace FiapCloudGames.Orders.Infrastructure.ExternalApi.Catalog;
 
 internal sealed class CatalogClient(
     HttpClient httpClient,
