@@ -15,30 +15,35 @@ public sealed class CreatePurchaseOrderService(
     {
         // OBS: Se alguma das validações falhar não processa a compra, processo atômico, ou faz tudo ou faz nada.
 
+        // 1. Verifica produtos repetidos nos items da ordem de compra.
         CheckDuplicateItem(input.items);
-        // TODO: se o usuário já tiver o jogo, retorna erro também e não permite emitir a compra.
 
-        // 1. Consulta a api externa Library pra verificar se os jogos já constam na biblioteca do usuário.
-        var libraryResults = await Task.WhenAll(
-            input.items.Select(async item => new
-            {
-                Item = item,
-                Library = await libraryGateway.CheckGameExistsOnLibraryAsync(
-                    input.CustomerId,
-                    item.ProductId,
-                    cancellationToken)
-            }));
-
-        // 2. Mapeando os objetos de input para domínio e aplicando consultas as API Catalog e Promotions.
-        var purchaseOrderItems = await Task.WhenAll(
-            libraryResults
-                .Where(result => !result.Library.Exists)
-                .Select(async result =>
+        // 2. Consulta a api externa Library pra verificar se os jogos já constam na biblioteca do usuário, caso ele já possua interrompe o processo de compra.
+        await Task.WhenAll
+        (
+            input.items
+                .Select(async item =>
                 {
-                    var item = result.Item;
+                    var isOwnedGame = await libraryGateway.CheckGameExistsOnLibraryAsync(
+                        input.CustomerId,
+                        item.ProductId,
+                        cancellationToken);
+
+                    if (isOwnedGame.Exists)
+                        throw AppException.BusinessRule($"O cliente {input.CustomerId} já possui o produto {item.ProductId}");
+
+                    return item;
+                })
+        );
+
+        // 3. Mapeando os objetos de input para domínio e aplicando consultas as API Catalog e Promotions.
+        var purchaseOrderItems = await Task.WhenAll(
+            input.items
+                .Select(async item =>
+                {
                     var game = await catalogGateway.GetGameByIdAsync(item.ProductId, cancellationToken);
 
-                    CheckGame(result.Item, game);
+                    CheckGame(item, game);
 
                     CalculatePromotion calculatedPromotion = new(0);
 
@@ -46,7 +51,7 @@ public sealed class CreatePurchaseOrderService(
                     {
                         var promotion = await promotionsGateway.GetByIdAsync(item.PromotionId.Value, cancellationToken);
 
-                        CheckPromotions(result.Item, promotion);
+                        CheckPromotions(item, promotion);
 
                         calculatedPromotion = await promotionsGateway
                             .PostCalcularDescontoAsync(
@@ -67,14 +72,14 @@ public sealed class CreatePurchaseOrderService(
                         item.PromotionId);
                 }));
 
-        // 3. Verifica se existe pelo menos um produto na ordem de compra.
+        // 4. Verifica se existe pelo menos um produto na ordem de compra.
         if (!purchaseOrderItems.Any())
             throw AppException.Conflict("Não pode ser gerado ordem de compra sem produtos.");
 
-        // 4. crio o objeto.
+        // 5. crio o objeto.
         var purchaseOrder = PurchaseOrder.Create(input.CustomerId, purchaseOrderItems, clock.GetUtcNow());
 
-        // 5. Workaround para vincular o número da ordem da compra a cada item da compra.
+        // 6. Workaround para vincular o número da ordem da compra a cada item da compra.
         foreach (var item in purchaseOrder.Items)
         {
             logger.LogInformation("Vinculando o produto {ProductId} à ordem de compra {Id}", item.ProductId, purchaseOrder.Id);
@@ -83,7 +88,7 @@ public sealed class CreatePurchaseOrderService(
 
         logger.LogInformation("Gerando ordem de compra.");
 
-        // 6. Gerando ordem de compra.
+        // 7. Gerando ordem de compra.
         await purchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
 
         // OBS: Order é o orquestrador de tudo.
@@ -109,7 +114,8 @@ public sealed class CreatePurchaseOrderService(
 
     private static void CheckGame(CreatePurchaseOrderItemsInput item, Game game)
     {
-        // Tudo que não é do domínio do ms é um BusinessRule;
+        // OBS: Tudo que não é do domínio do ms é um BusinessRule;
+
         if (game is null)
             throw AppException.BusinessRule($"Não foi localizado um jogo com o ID {item.ProductId}");
 
