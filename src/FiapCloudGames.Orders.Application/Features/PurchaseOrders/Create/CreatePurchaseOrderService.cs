@@ -13,10 +13,10 @@ public sealed class CreatePurchaseOrderService(
         CreatePurchaseOrderInput input,
         CancellationToken cancellationToken)
     {
-        // TODO: se tiver item repetido devolve informando erro de item repetido.
-        // TODO: se o usuário já tiver o jogo, retorna erro também e não permite emitir a compra.
+        // OBS: Se alguma das validações falhar não processa a compra, processo atômico, ou faz tudo ou faz nada.
 
-        // OBS: Se a validação falhar não faz nada, processo atômico, ou faz tudo ou faz nada.
+        CheckDuplicateItem(input.items);
+        // TODO: se o usuário já tiver o jogo, retorna erro também e não permite emitir a compra.
 
         // 1. Consulta a api externa Library pra verificar se os jogos já constam na biblioteca do usuário.
         var libraryResults = await Task.WhenAll(
@@ -33,7 +33,6 @@ public sealed class CreatePurchaseOrderService(
         var purchaseOrderItems = await Task.WhenAll(
             libraryResults
                 .Where(result => !result.Library.Exists)
-                .DistinctBy(x => x.Item.ProductId)
                 .Select(async result =>
                 {
                     var item = result.Item;
@@ -125,5 +124,24 @@ public sealed class CreatePurchaseOrderService(
 
         if (!promotion.IsActive)
             throw AppException.BusinessRule($"A promoção ID {item.PromotionId!.Value} não está ativa.");
+    }
+
+    private static void CheckDuplicateItem(IEnumerable<CreatePurchaseOrderItemsInput> items)
+    {
+        var duplicatedItems = items
+            .GroupBy(item => item.ProductId)
+            .Where(group => group.Count() > 1)
+            .Select(group => new
+            {
+                ProductId = group.Key,
+                AmountDuplicated = group.Count()
+            })
+            .ToList();
+
+        if (duplicatedItems.Any())
+        {
+            var detalhesErro = string.Join(", ", duplicatedItems.Select(d => $"(ID: {d.ProductId}) apareceu {d.AmountDuplicated} vezes"));
+            throw AppException.BusinessRule($"Operação cancelada! Foram encontrados produtos duplicados na lista: {detalhesErro}. Por favor, revise os itens.");
+        }
     }
 }
