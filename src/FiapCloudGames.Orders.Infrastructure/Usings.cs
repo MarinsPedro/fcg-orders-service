@@ -2,13 +2,16 @@
 global using FiapCloudGames.BuildingBlocks.Observability;
 global using FiapCloudGames.Orders.Application;
 global using FiapCloudGames.Orders.Application.Abstractions.External;
+global using FiapCloudGames.Orders.Application.Abstractions.Messaging;
 global using FiapCloudGames.Orders.Application.Abstractions.Persistence;
+global using FiapCloudGames.Orders.Contracts;
 global using FiapCloudGames.Orders.Domain.Orders;
 global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Base;
 global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Catalog;
 global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Library;
 global using FiapCloudGames.Orders.Infrastructure.ExternalApi.Promotions;
 global using FiapCloudGames.Orders.Infrastructure.Health;
+global using FiapCloudGames.Orders.Infrastructure.Messaging;
 global using FiapCloudGames.Orders.Infrastructure.Persistence;
 global using FiapCloudGames.Orders.Infrastructure.Persistence.Repositories;
 global using MassTransit;

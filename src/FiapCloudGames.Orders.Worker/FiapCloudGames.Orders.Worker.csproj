@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+	<ItemGroup>
+		<ProjectReference Include="..\FiapCloudGames.Orders.Application\FiapCloudGames.Orders.Application.csproj" />
+		<ProjectReference Include="..\FiapCloudGames.Orders.Contracts\FiapCloudGames.Orders.Contracts.csproj" />
+		<ProjectReference Include="..\FiapCloudGames.Orders.Infrastructure\FiapCloudGames.Orders.Infrastructure.csproj" />
+		<ProjectReference Include="$(LocalBuildingBlocksProject)" Condition="'$(UseLocalBuildingBlocks)' == 'true'" />
+		<PackageReference Include="FiapCloudGames.BuildingBlocks" Condition="'$(UseLocalBuildingBlocks)' != 'true'" />
+		<PackageReference Include="MassTransit.RabbitMQ" />
+		<PackageReference Include="MassTransit.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" />
+	</ItemGroup>
+</Project>

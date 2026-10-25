@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
+		<ProjectReference Include="..\FiapCloudGames.Orders.Contracts\FiapCloudGames.Orders.Contracts.csproj" />
 		<ProjectReference Include="..\FiapCloudGames.Orders.Domain\FiapCloudGames.Orders.Domain.csproj" />
 		<ProjectReference Include="$(LocalBuildingBlocksProject)" Condition="'$(UseLocalBuildingBlocks)' == 'true'" />
 		<PackageReference Include="FiapCloudGames.BuildingBlocks" Condition="'$(UseLocalBuildingBlocks)' != 'true'" />

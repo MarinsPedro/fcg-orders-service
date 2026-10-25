@@ -1,4 +1,7 @@
-﻿namespace FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
+﻿using FiapCloudGames.Orders.Application.Abstractions.Messaging;
+using FiapCloudGames.Orders.Contracts.Events.V1;
+
+namespace FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
 
 public sealed class CreatePurchaseOrderService(
     IPurchaseOrderRepository purchaseOrderRepository,
@@ -6,6 +9,7 @@ public sealed class CreatePurchaseOrderService(
     IPromotionsGateway promotionsGateway,
     ILibraryGateway libraryGateway,
     IOrdersUnitOfWork unitOfWork,
+    IIntegrationEventPublisher events,
     TimeProvider clock,
     ILogger<CreatePurchaseOrderService> logger)
 {
@@ -93,8 +97,8 @@ public sealed class CreatePurchaseOrderService(
 
         // OBS: Order é o orquestrador de tudo.
 
-        // TODO: 0: (instalar uma imagem do RabbitMQ no docker)
-        // TODO: 1 - await chamando o messtransit pra salvar (messtransit.Publish) o evento indicando que uma ordem de compra foi Recebida.
+        // 8. Publica o evento indicando que uma ordem de compra foi Recebida.
+        await events.PublishAsync(new PurchaseOrderCreatedEvent(Guid.NewGuid(), purchaseOrder.Id), cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -109,7 +113,7 @@ public sealed class CreatePurchaseOrderService(
 
         // OBS: toda vez que algum ms bate no Order é um consumer.
 
-        // TODO: depois de tudo, um outro consumer 3 do worker deverá enviar uma mensagem para o Library pra vincular o usário x List<Games>;
+        // TODO: depois de tudo, um consumer 3 do worker deverá enviar uma mensagem para o Library pra vincular o usário x List<Games>;
     }
 
     private static void CheckGame(CreatePurchaseOrderItemsInput item, Game game)
