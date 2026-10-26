@@ -1,10 +1,12 @@
 ﻿global using FiapCloudGames.BuildingBlocks.Exceptions;
 global using FiapCloudGames.Orders.Application.Abstractions.External;
+global using FiapCloudGames.Orders.Application.Abstractions.Messaging;
 global using FiapCloudGames.Orders.Application.Abstractions.Persistence;
 global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.ChangeStatus;
 global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
 global using FiapCloudGames.Orders.Application.Features.PurchaseOrders.Get;
 global using FiapCloudGames.Orders.Contracts;
+global using FiapCloudGames.Orders.Contracts.Events.V1;
 global using FiapCloudGames.Orders.Domain.Extensions;
 global using FiapCloudGames.Orders.Domain.Orders;
 global using Microsoft.Extensions.DependencyInjection;

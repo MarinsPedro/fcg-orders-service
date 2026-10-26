@@ -1,7 +1,4 @@
-﻿using FiapCloudGames.Orders.Application.Abstractions.Messaging;
-using FiapCloudGames.Orders.Contracts.Events.V1;
-
-namespace FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
+﻿namespace FiapCloudGames.Orders.Application.Features.PurchaseOrders.Create;
 
 public sealed class CreatePurchaseOrderService(
     IPurchaseOrderRepository purchaseOrderRepository,
