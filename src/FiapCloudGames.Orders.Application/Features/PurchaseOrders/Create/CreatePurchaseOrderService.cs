@@ -16,71 +16,50 @@ public sealed class CreatePurchaseOrderService(
     {
         // OBS: Se alguma das validações falhar não processa a compra, processo atômico, ou faz tudo ou faz nada.
 
-        // 1. Verifica produtos repetidos nos items da ordem de compra.
-        CheckDuplicateItem(input.items);
+        var items = input.items.ToArray();
+        var errors = GetDuplicateItemErrors(items).ToList();
 
-        // 2. Consulta a api externa Library pra verificar se os jogos já constam na biblioteca do usuário, caso ele já possua interrompe o processo de compra.
-        await Task.WhenAll
-        (
-            input.items
-                .Select(async item =>
-                {
-                    var isOwnedGame = await libraryGateway.CheckGameExistsOnLibraryAsync(
-                        input.CustomerId,
-                        item.ProductId,
-                        cancellationToken);
+        if (items.Length == 0)
+            errors.Add(new AppError(
+                "A ordem de compra deve possuir pelo menos um produto.",
+                "items"));
 
-                    if (isOwnedGame.Exists)
-                        throw AppException.BusinessRule($"O cliente {input.CustomerId} já possui o produto {item.ProductId}");
+        var activeGamesTask = purchaseOrderRepository.GetGamesInActiveOrdersAsync(
+            input.CustomerId,
+            items.Select(item => item.ProductId).Distinct().ToArray(),
+            cancellationToken);
+        var itemValidationsTask = Task.WhenAll(
+            items.Select((item, index) => ValidateItemAsync(
+                input.CustomerId,
+                item,
+                index,
+                cancellationToken)));
 
-                    return item;
-                })
-        );
+        await Task.WhenAll(activeGamesTask, itemValidationsTask);
 
-        // 3. Mapeando os objetos de input para domínio e aplicando consultas as API Catalog e Promotions.
-        var purchaseOrderItems = await Task.WhenAll(
-            input.items
-                .Select(async item =>
-                {
-                    var game = await catalogGateway.GetGameByIdAsync(item.ProductId, cancellationToken);
+        var activeGames = (await activeGamesTask).ToHashSet();
+        errors.AddRange(items
+            .Select((item, index) => new { Item = item, Index = index })
+            .Where(entry => activeGames.Contains(entry.Item.ProductId))
+            .Select(entry => new AppError(
+                $"O produto {entry.Item.ProductId} já está associado a uma ordem em andamento.",
+                $"items[{entry.Index}].productId")));
 
-                    CheckGame(item, game);
+        var itemValidations = await itemValidationsTask;
 
-                    CalculatePromotion calculatedPromotion = new(0);
+        errors.AddRange(itemValidations.SelectMany(result => result.Errors));
 
-                    if (item.PromotionId is not null)
-                    {
-                        var promotion = await promotionsGateway.GetByIdAsync(item.PromotionId.Value, cancellationToken);
+        if (errors.Count > 0)
+            throw new BusinessRuleValidationException(errors);
 
-                        CheckPromotions(item, promotion);
+        var purchaseOrderItems = itemValidations
+            .Select(result => result.Item!)
+            .ToArray();
 
-                        calculatedPromotion = await promotionsGateway
-                            .PostCalcularDescontoAsync(
-                                item.PromotionId.Value,
-                                item.ProductId,
-                                game.BasePrice,
-                                cancellationToken);
-                    }
-
-                    var finalPrice = item.PromotionId is null
-                        ? game.BasePrice
-                        : calculatedPromotion.FinalPrice;
-
-                    return PurchaseOrderItem.Create(
-                        item.ProductId,
-                        game.BasePrice,
-                        finalPrice,
-                        item.PromotionId);
-                }));
-
-        // 4. Verifica se existe pelo menos um produto na ordem de compra.
-        if (!purchaseOrderItems.Any())
-            throw AppException.Conflict("Não pode ser gerado ordem de compra sem produtos.");
-
-        // 5. crio o objeto.
+        // Cria o agregado somente após todas as regras de negócio serem atendidas.
         var purchaseOrder = PurchaseOrder.Create(input.CustomerId, purchaseOrderItems, clock.GetUtcNow());
 
-        // 6. Workaround para vincular o número da ordem da compra a cada item da compra.
+        // Workaround para vincular o número da ordem da compra a cada item da compra.
         foreach (var item in purchaseOrder.Items)
         {
             logger.LogInformation("Vinculando o produto {ProductId} à ordem de compra {Id}", item.ProductId, purchaseOrder.Id);
@@ -89,12 +68,19 @@ public sealed class CreatePurchaseOrderService(
 
         logger.LogInformation("Gerando ordem de compra.");
 
-        // 7. Gerando ordem de compra.
+        // Adiciona a ordem de compra à unidade de trabalho.
         await purchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
+        await purchaseOrderRepository.AddReservationsAsync(
+            purchaseOrder.Items.Select(item => PurchaseOrderGameReservation.Create(
+                purchaseOrder.Id,
+                purchaseOrder.CustomerId,
+                item.ProductId,
+                purchaseOrder.CreatedAtUtc)),
+            cancellationToken);
 
         // OBS: Order é o orquestrador de tudo.
 
-        // 8. Publica o evento indicando que uma ordem de compra foi Recebida.
+        // Publica o evento indicando que uma ordem de compra foi recebida.
         await events.PublishAsync(new PurchaseOrderCreatedEvent(Guid.NewGuid(), purchaseOrder.Id), cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -113,42 +99,191 @@ public sealed class CreatePurchaseOrderService(
         // TODO: depois de tudo, um consumer 3 do worker deverá enviar uma mensagem para o Library pra vincular o usário x List<Games>;
     }
 
-    private static void CheckGame(CreatePurchaseOrderItemsInput item, Game game)
+    private async Task<ItemValidationResult> ValidateItemAsync(
+        Guid customerId,
+        CreatePurchaseOrderItemsInput item,
+        int index,
+        CancellationToken cancellationToken)
     {
-        // OBS: Tudo que não é do domínio do ms é um BusinessRule;
+        var errors = new List<AppError>();
+        var productField = $"items[{index}].productId";
+        var promotionField = $"items[{index}].promotionId";
 
-        if (game is null)
-            throw AppException.BusinessRule($"Não foi localizado um jogo com o ID {item.ProductId}");
+        var libraryTask = libraryGateway.CheckGameExistsOnLibraryAsync(
+            customerId,
+            item.ProductId,
+            cancellationToken);
+        var gameTask = catalogGateway.GetGameByIdAsync(
+            item.ProductId,
+            cancellationToken);
+        var promotionTask = item.PromotionId is not null
+            ? promotionsGateway.GetByIdAsync(
+                item.PromotionId.Value,
+                cancellationToken)
+            : null;
 
-        if (!game.IsActive)
-            throw AppException.BusinessRule($"O jogo ID {item.ProductId} não está ativo.");
-    }
+        var pendingTasks = new List<Task> { libraryTask, gameTask };
+        if (promotionTask is not null)
+            pendingTasks.Add(promotionTask);
 
-    private static void CheckPromotions(CreatePurchaseOrderItemsInput item, Promotion promotion)
-    {
-        if (promotion is null)
-            throw AppException.BusinessRule($"Não foi localizado uma promoção com o ID {item.PromotionId!.Value}");
+        await Task.WhenAll(pendingTasks);
 
-        if (!promotion.IsActive)
-            throw AppException.BusinessRule($"A promoção ID {item.PromotionId!.Value} não está ativa.");
-    }
+        var library = GetSuccessfulResponse(
+            await libraryTask,
+            "Library");
+        if (library.Exists)
+            errors.Add(new AppError(
+                $"O cliente {customerId} já possui o produto {item.ProductId}.",
+                productField));
 
-    private static void CheckDuplicateItem(IEnumerable<CreatePurchaseOrderItemsInput> items)
-    {
-        var duplicatedItems = items
-            .GroupBy(item => item.ProductId)
-            .Where(group => group.Count() > 1)
-            .Select(group => new
-            {
-                ProductId = group.Key,
-                AmountDuplicated = group.Count()
-            })
-            .ToList();
+        var game = ResolveGame(
+            item,
+            productField,
+            await gameTask,
+            errors);
+        if (game is { IsActive: false })
+            errors.Add(new AppError(
+                $"O jogo ID {item.ProductId} não está ativo.",
+                productField));
 
-        if (duplicatedItems.Any())
+        Promotion? promotion = null;
+        if (promotionTask is not null)
         {
-            var detalhesErro = string.Join(", ", duplicatedItems.Select(d => $"(ID: {d.ProductId}) apareceu {d.AmountDuplicated} vezes"));
-            throw AppException.BusinessRule($"Operação cancelada! Foram encontrados produtos duplicados na lista: {detalhesErro}. Por favor, revise os itens.");
+            promotion = ResolvePromotion(
+                item,
+                promotionField,
+                await promotionTask,
+                errors);
+            if (promotion is { IsActive: false })
+                errors.Add(new AppError(
+                    $"A promoção ID {item.PromotionId!.Value} não está ativa.",
+                    promotionField));
         }
+
+        CalculatePromotion? calculatedPromotion = null;
+        if (item.PromotionId is not null &&
+            game is { IsActive: true } &&
+            promotion is { IsActive: true })
+        {
+            var calculationResponse = await promotionsGateway
+                .PostCalcularDescontoAsync(
+                    item.PromotionId.Value,
+                    item.ProductId,
+                    game.BasePrice,
+                    cancellationToken);
+            calculatedPromotion = ResolvePromotionCalculation(
+                item,
+                promotionField,
+                calculationResponse,
+                errors);
+        }
+
+        if (errors.Count > 0)
+            return new ItemValidationResult(null, errors);
+
+        var finalPrice = item.PromotionId is null
+            ? game!.BasePrice
+            : calculatedPromotion!.FinalPrice;
+
+        var purchaseOrderItem = PurchaseOrderItem.Create(
+            item.ProductId,
+            game!.BasePrice,
+            finalPrice,
+            item.PromotionId);
+
+        return new ItemValidationResult(purchaseOrderItem, errors);
     }
+
+    private static Game? ResolveGame(
+        CreatePurchaseOrderItemsInput item,
+        string field,
+        ExternalApiResponse<Game> response,
+        ICollection<AppError> errors)
+    {
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            errors.Add(new AppError(
+                $"Não foi localizado um jogo com o ID {item.ProductId}.",
+                field));
+            return null;
+        }
+
+        return GetSuccessfulResponse(response, "Catalog");
+    }
+
+    private static Promotion? ResolvePromotion(
+        CreatePurchaseOrderItemsInput item,
+        string field,
+        ExternalApiResponse<Promotion> response,
+        ICollection<AppError> errors)
+    {
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            errors.Add(new AppError(
+                $"Não foi localizada uma promoção com o ID {item.PromotionId!.Value}.",
+                field));
+            return null;
+        }
+
+        return GetSuccessfulResponse(response, "Promotions");
+    }
+
+    private static CalculatePromotion? ResolvePromotionCalculation(
+        CreatePurchaseOrderItemsInput item,
+        string field,
+        ExternalApiResponse<CalculatePromotion> response,
+        ICollection<AppError> errors)
+    {
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            errors.Add(new AppError(
+                $"Não foi localizada uma promoção com o ID {item.PromotionId!.Value}.",
+                field));
+            return null;
+        }
+
+        if (response.StatusCode == HttpStatusCode.UnprocessableEntity)
+        {
+            errors.Add(new AppError(
+                string.IsNullOrWhiteSpace(response.ErrorDetail)
+                    ? "A promoção informada não pode ser aplicada a este produto."
+                    : response.ErrorDetail,
+                field));
+            return null;
+        }
+
+        return GetSuccessfulResponse(response, "Promotions");
+    }
+
+    private static T GetSuccessfulResponse<T>(
+        ExternalApiResponse<T> response,
+        string serviceName)
+        where T : class
+    {
+        if (response.IsSuccessStatusCode && response.Value is not null)
+            return response.Value;
+
+        throw new HttpRequestException(
+            $"A API {serviceName} respondeu com status {(int)response.StatusCode}.",
+            inner: null,
+            response.StatusCode);
+    }
+
+    private static IEnumerable<AppError> GetDuplicateItemErrors(
+        IReadOnlyList<CreatePurchaseOrderItemsInput> items)
+    {
+        var indexedItems = items
+            .Select((item, index) => new { Item = item, Index = index });
+
+        return indexedItems
+            .GroupBy(entry => entry.Item.ProductId)
+            .Where(group => group.Count() > 1)
+            .SelectMany(group => group.Select(entry => new AppError(
+                $"O produto {group.Key} está repetido na ordem de compra.",
+                $"items[{entry.Index}].productId")));
+    }
+
+    private sealed record ItemValidationResult(
+        PurchaseOrderItem? Item,
+        IReadOnlyCollection<AppError> Errors);
 }

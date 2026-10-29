@@ -7,7 +7,7 @@ public class PurchaseOrderController : ControllerBase
     private const string GetByIdRoute = "Orders.PurchaseOrder.GetByIdAsync";
 
     [Authorize(Policy = OrdersPolicies.PurchaseOrderRead)]
-    [HttpGet("{id:guid}",Name = GetByIdRoute)]
+    [HttpGet("{id:guid}", Name = GetByIdRoute)]
     public async Task<ActionResult<PurchaseOrderResponse>> GetByIdAsync(
         [FromRoute] Guid id,
         [FromServices] GetPurchaseOrderService service,
@@ -19,25 +19,19 @@ public class PurchaseOrderController : ControllerBase
 
     [Authorize(Policy = OrdersPolicies.PurchaseOrderCreate)]
     [HttpPost]
+    [ProducesResponseType(typeof(PurchaseOrderResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ApiProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PurchaseOrderResponse>> CreateAsync(
         [FromBody] CreatePurchaseOrderRequest request,
         [FromServices] CreatePurchaseOrderService service,
         CancellationToken cancellationToken)
     {
         var result = await service.ExecuteAsync(request.ToInput(), cancellationToken);
-        var response = result.ToResponse();
-        return CreatedAtRoute(GetByIdRoute, new { id = response.Id }, response);
-    }
-
-    [Authorize(Policy = OrdersPolicies.PurchaseOrderWrite)]
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<PurchaseOrderResponse>> PutChangeStatusAsync(
-        [FromRoute] Guid id,
-        [FromBody] ChangeStatusPurchaseOrderRequest request,
-        [FromServices] ChangeStatusPurchaseOrderService service,
-        CancellationToken cancellationToken)
-    {
-        var result = await service.ExecuteAsync(id, request.ToInput(), cancellationToken);
         var response = result.ToResponse();
         return CreatedAtRoute(GetByIdRoute, new { id = response.Id }, response);
     }

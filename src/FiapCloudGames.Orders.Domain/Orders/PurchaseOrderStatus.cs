@@ -30,12 +30,6 @@ public enum PurchaseOrderStatus
     PaymentRejected = 4,
 
     /// <summary>
-    /// Estado que indica que o microsserviço de Library está processando a aquisição do jogo para a biblioteca do cliente (jogador).
-    /// </summary>
-    [Display(Name = "Biblioteca Pendente")]
-    LibraryPending = 5,
-
-    /// <summary>
     /// Estado indicando a fase final, ou seja, que o pedido foi concluído.
     /// </summary>
     [Display(Name = "Concluído")]

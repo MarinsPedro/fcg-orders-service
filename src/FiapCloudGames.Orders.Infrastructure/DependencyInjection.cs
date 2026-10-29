@@ -15,7 +15,7 @@ public static class DependencyInjection
 
         services.AddOrdersApplication();
         services.AddDbContext<OrdersDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddScoped<IOrdersUnitOfWork>(provider => provider.GetRequiredService<OrdersDbContext>());
+        services.AddScoped<IOrdersUnitOfWork, OrdersUnitOfWork>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddHealthChecks().AddCheck<OrdersDatabaseHealthCheck>("orders-database", tags: ["ready"]);
 
@@ -56,49 +56,43 @@ public static class DependencyInjection
         })
         .AddFiapCorrelationPropagation();
 
-        services.AddHttpClient<ILibraryGateway, LibraryClient>((provider, client) => {
+        services.AddHttpClient<ILibraryGateway, LibraryClient>((provider, client) =>
+        {
             var options = provider.GetRequiredService<IOptions<LibraryApiOptions>>().Value;
             client.BaseAddress = new Uri(options.BaseAddress);
             client.Timeout = TimeSpan.FromSeconds(300);
-        });
+        })
+        .AddFiapCorrelationPropagation();
 
         #endregion
 
         #region Messaging
 
-        var useInMemoryMessaging = configuration.GetValue<bool>("Messaging:UseInMemory");
-
         services
             .AddOptions<RabbitMqOptions>()
             .Bind(configuration.GetSection(RabbitMqOptions.SectionName))
             .Validate(
-                options => useInMemoryMessaging ||
-                    !string.IsNullOrWhiteSpace(options.Host),
+                options => !string.IsNullOrWhiteSpace(options.Host),
                 "RabbitMq:Host é obrigatório.")
             .Validate(
-                options => useInMemoryMessaging || options.Port > 0,
+                options => options.Port > 0,
                 "RabbitMq:Port deve ser maior que zero.")
             .Validate(
-                options => useInMemoryMessaging ||
-                    !string.IsNullOrWhiteSpace(options.VirtualHost),
+                options => !string.IsNullOrWhiteSpace(options.VirtualHost),
                 "RabbitMq:VirtualHost é obrigatório.")
             .Validate(
-                options => useInMemoryMessaging ||
-                    !string.IsNullOrWhiteSpace(options.Username),
+                options => !string.IsNullOrWhiteSpace(options.Username),
                 "RabbitMq:Username é obrigatório.")
             .Validate(
-                options => useInMemoryMessaging ||
-                    !string.IsNullOrWhiteSpace(options.Password),
+                options => !string.IsNullOrWhiteSpace(options.Password),
                 "RabbitMq:Password é obrigatório.")
+            .Validate(
+                options => !string.IsNullOrWhiteSpace(
+                    options.Topology.Exchanges.PurchaseOrderCreated),
+                "RabbitMq:Topology:Exchanges:PurchaseOrderCreated é obrigatório.")
             .ValidateOnStart();
         services.AddMassTransit(configurator =>
         {
-            if (useInMemoryMessaging)
-            {
-                configurator.UsingInMemory();
-                return;
-            }
-
             configurator.AddEntityFrameworkOutbox<OrdersDbContext>(outbox =>
             {
                 outbox.UsePostgres();
@@ -106,11 +100,13 @@ public static class DependencyInjection
             });
             configurator.UsingRabbitMq((context, rabbitMq) =>
             {
-                rabbitMq.Message<PurchaseOrderCreatedEvent>(topology =>
-                    topology.SetEntityName(PurchaseOrderCreatedEvent.ExchangeName));
-
                 var options = context.GetRequiredService<
                     Microsoft.Extensions.Options.IOptions<RabbitMqOptions>>().Value;
+
+                rabbitMq.Message<PurchaseOrderCreatedEvent>(topology =>
+                    topology.SetEntityName(
+                        options.Topology.Exchanges.PurchaseOrderCreated));
+
                 rabbitMq.Host(
                     options.Host,
                     options.Port,

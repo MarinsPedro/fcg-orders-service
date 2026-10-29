@@ -2,7 +2,9 @@
 
 public interface ICatalogGateway
 {
-    Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ExternalApiResponse<Game>> GetGameByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record Game(

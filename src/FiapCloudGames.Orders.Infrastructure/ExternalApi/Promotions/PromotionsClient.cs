@@ -8,7 +8,11 @@ internal sealed class PromotionsClient(
 {
     private readonly PromotionsApiOptions options = configuredOptions.Value;
 
-    public async Task<CalculatePromotion> PostCalcularDescontoAsync(Guid promotionId, Guid gameId, decimal basePrice, CancellationToken cancellationToken = default)
+    public async Task<ExternalApiResponse<CalculatePromotion>> PostCalcularDescontoAsync(
+        Guid promotionId,
+        Guid gameId,
+        decimal basePrice,
+        CancellationToken cancellationToken = default)
     {
         // O Building Blocks consulta o Discovery do Identity na primeira vez,
         // pede o token por Client Credentials e reutiliza o token em memória.
@@ -28,10 +32,9 @@ internal sealed class PromotionsClient(
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(
-                $"A API Promotions respondeu com status {(int)response.StatusCode}.",
-                inner: null,
-                response.StatusCode);
+            return await ExternalApiResponseFactory.FailureAsync<CalculatePromotion>(
+                response,
+                cancellationToken);
         }
 
         var apiResponse = await response.Content.ReadFromJsonAsync<CalculatePromotionResponse>(cancellationToken);
@@ -41,10 +44,14 @@ internal sealed class PromotionsClient(
             throw new HttpRequestException($"A API Promotions retornou com status {(int)response.StatusCode}.");
         }
 
-        return new CalculatePromotion(apiResponse.FinalPrice);
+        return ExternalApiResponseFactory.Success(
+            response.StatusCode,
+            new CalculatePromotion(apiResponse.FinalPrice));
     }
 
-    public async Task<Promotion> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ExternalApiResponse<Promotion>> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         var accessToken = await tokenProvider.GetAccessTokenAsync(
             options.Audience,
@@ -61,10 +68,9 @@ internal sealed class PromotionsClient(
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(
-                $"A API Promotions respondeu com status {(int)response.StatusCode}.",
-                inner: null,
-                response.StatusCode);
+            return await ExternalApiResponseFactory.FailureAsync<Promotion>(
+                response,
+                cancellationToken);
         }
 
         var apiResponse = await response.Content.ReadFromJsonAsync<PromotionResponse>(cancellationToken);
@@ -77,12 +83,14 @@ internal sealed class PromotionsClient(
             throw new HttpRequestException("A API Category retornou uma resposta inválida.");
         }
 
-        return new Promotion(
-            apiResponse.Id,
-            apiResponse.Name,
-            apiResponse.DiscountType,
-            apiResponse.DiscountValue,
-            apiResponse.IsActive);
+        return ExternalApiResponseFactory.Success(
+            response.StatusCode,
+            new Promotion(
+                apiResponse.Id,
+                apiResponse.Name,
+                apiResponse.DiscountType,
+                apiResponse.DiscountValue,
+                apiResponse.IsActive));
     }
 
     private sealed record CalculatePromotionResponse(decimal FinalPrice);

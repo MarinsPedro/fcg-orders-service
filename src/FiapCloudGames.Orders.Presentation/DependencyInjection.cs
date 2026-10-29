@@ -22,14 +22,15 @@ public static class DependencyInjection
                     .RequireAuthenticatedUser()
                     .RequireServiceToken()
                     .RequireScopes("orders.purchaseorder.read"));
-            options.AddPolicy(
-                OrdersPolicies.PurchaseOrderWrite,
-                policy => policy
-                    .RequireAuthenticatedUser()
-                    .RequireServiceToken()
-                    .RequireScopes("orders.purchaseorder.write"));
         });
 
         return services;
+    }
+
+    public static IApplicationBuilder UseOrdersPresentation(
+        this IApplicationBuilder app)
+    {
+        app.UseMiddleware<BusinessRuleValidationMiddleware>();
+        return app;
     }
 }

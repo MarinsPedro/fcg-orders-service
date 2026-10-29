@@ -2,7 +2,4 @@
 
 public sealed record PurchaseOrderCreatedEvent(
     Guid EventId,
-    Guid PurchaseOrderId) : IIntegrationEvent
-{
-    public const string ExchangeName = "orders.purchase-order-created.v1";
-}
+    Guid PurchaseOrderId) : IIntegrationEvent;

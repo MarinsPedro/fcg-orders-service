@@ -50,6 +50,33 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                     b.ToTable("purchase_orders", "orders");
                 });
 
+            modelBuilder.Entity("FiapCloudGames.Orders.Domain.Orders.PurchaseOrderGameReservation", b =>
+                {
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.HasKey("PurchaseOrderId", "GameId");
+
+                    b.HasIndex("CustomerId", "GameId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_purchase_order_game_reservations_customer_game");
+
+                    b.ToTable("purchase_order_game_reservations", "orders");
+                });
+
             modelBuilder.Entity("FiapCloudGames.Orders.Domain.Orders.PurchaseOrderItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -83,6 +110,97 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                     b.HasIndex("PurchaseOrderId");
 
                     b.ToTable("purchase_order_items", "orders");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Orders.Infrastructure.Orchestration.PurchaseOrderSagaGame", b =>
+                {
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
+                    b.Property<DateTimeOffset?>("GrantedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("granted_at_utc");
+
+                    b.Property<Guid?>("LibraryEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("library_entry_id");
+
+                    b.Property<Guid>("OrderItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_item_id");
+
+                    b.Property<DateTimeOffset?>("RequestedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at_utc");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.HasKey("OrderId", "GameId");
+
+                    b.HasIndex("OrderId", "Status")
+                        .HasDatabaseName("ix_purchase_order_saga_games_order_status");
+
+                    b.HasIndex("OrderItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_purchase_order_saga_games_order_item");
+
+                    b.ToTable("purchase_order_saga_games", "orders");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Orders.Infrastructure.Orchestration.PurchaseOrderSagaState", b =>
+                {
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrentState")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("current_state");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<int>("ExpectedGameCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("expected_game_count");
+
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("total_amount");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("CorrelationId");
+
+                    b.HasIndex("CurrentState", "CompletedAtUtc")
+                        .HasDatabaseName("ix_purchase_order_saga_states_state_completed");
+
+                    b.ToTable("purchase_order_saga_states", "orders");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.InboxState", b =>
@@ -253,6 +371,15 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                     b.ToTable("outbox_state", "orders");
                 });
 
+            modelBuilder.Entity("FiapCloudGames.Orders.Domain.Orders.PurchaseOrderGameReservation", b =>
+                {
+                    b.HasOne("FiapCloudGames.Orders.Domain.Orders.PurchaseOrder", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FiapCloudGames.Orders.Domain.Orders.PurchaseOrderItem", b =>
                 {
                     b.HasOne("FiapCloudGames.Orders.Domain.Orders.PurchaseOrder", "PurchaseOrder")
@@ -263,6 +390,15 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                         .HasConstraintName("fk_purchase_order_purchase_order_items_purchase_order_id");
 
                     b.Navigation("PurchaseOrder");
+                });
+
+            modelBuilder.Entity("FiapCloudGames.Orders.Infrastructure.Orchestration.PurchaseOrderSagaGame", b =>
+                {
+                    b.HasOne("FiapCloudGames.Orders.Infrastructure.Orchestration.PurchaseOrderSagaState", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

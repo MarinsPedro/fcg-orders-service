@@ -7,7 +7,10 @@ internal sealed class LibraryClient(
 {
     private readonly LibraryApiOptions options = configuredOptions.Value;
 
-    public async Task<UserLibrary> CheckGameExistsOnLibraryAsync(Guid userId, Guid gameId, CancellationToken cancellationToken = default)
+    public async Task<ExternalApiResponse<UserLibrary>> CheckGameExistsOnLibraryAsync(
+        Guid userId,
+        Guid gameId,
+        CancellationToken cancellationToken = default)
     {
         // O Building Blocks consulta o Discovery do Identity na primeira vez,
         // pede o token por Client Credentials e reutiliza o token em memória.
@@ -26,15 +29,16 @@ internal sealed class LibraryClient(
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(
-                $"A API Library respondeu com status {(int)response.StatusCode}.",
-                inner: null,
-                response.StatusCode);
+            return await ExternalApiResponseFactory.FailureAsync<UserLibrary>(
+                response,
+                cancellationToken);
         }
-        
+
         // A Library está devolvendo direito um bool sem um objeto wrapper.
         var apiResponse = await response.Content.ReadFromJsonAsync<bool>(cancellationToken);
 
-        return new UserLibrary(apiResponse);
+        return ExternalApiResponseFactory.Success(
+            response.StatusCode,
+            new UserLibrary(apiResponse));
     }
 }

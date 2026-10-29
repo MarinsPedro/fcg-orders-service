@@ -10,6 +10,7 @@ builder.Services.AddOrdersOpenApi();
 var app = builder.Build();
 
 app.UseFiapApiDefaults();
+app.UseOrdersPresentation();
 app.UseOrdersOpenApi();
 app.UseAuthentication();
 app.UseAuthorization();

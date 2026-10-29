@@ -55,21 +55,35 @@ public sealed class PurchaseOrder
 
     public void ChangeStatus(PurchaseOrderStatus status, DateTimeOffset updatedAtUtc)
     {
-        ValidationStatus(status);
+        if (Status == status)
+            return;
+
+        ValidateStatusTransition(status);
         Status = status;
         UpdatedAtUtc = ValidateUpdatedAt(updatedAtUtc);
     }
 
-    private void ValidationStatus(PurchaseOrderStatus status)
+    private void ValidateStatusTransition(PurchaseOrderStatus nextStatus)
     {
-        // TODO: corrigir as regras, incluir a comparação com a situação no banco.
-        if (status == PurchaseOrderStatus.OrderCompleted && Status == PurchaseOrderStatus.UserCncelled)
-            throw new DomainRuleViolationException($"Não é possível alterar o estado da ordem com situação {PurchaseOrderStatus.OrderCompleted.GetDisplayName()}");
+        var isAllowed = Status switch
+        {
+            PurchaseOrderStatus.Received => nextStatus is
+                PurchaseOrderStatus.PendingPayment or
+                PurchaseOrderStatus.UserCncelled or
+                PurchaseOrderStatus.Failed,
+            PurchaseOrderStatus.PendingPayment => nextStatus is
+                PurchaseOrderStatus.PaymentApproved or
+                PurchaseOrderStatus.PaymentRejected or
+                PurchaseOrderStatus.UserCncelled or
+                PurchaseOrderStatus.Failed,
+            PurchaseOrderStatus.PaymentApproved => nextStatus is
+                PurchaseOrderStatus.OrderCompleted or
+                PurchaseOrderStatus.Failed,
+            _ => false
+        };
 
-        if (status == PurchaseOrderStatus.Failed)
-            throw new DomainRuleViolationException($"Não é possível alterar o estado da ordem com situação {PurchaseOrderStatus.Failed.GetDisplayName()}");
-
-        if (status == PurchaseOrderStatus.UserCncelled && Status == PurchaseOrderStatus.PaymentApproved)
-            throw new DomainRuleViolationException($"Não é possível alterar o estado da ordem com situação {PurchaseOrderStatus.UserCncelled.GetDisplayName()}");
+        if (!isAllowed)
+            throw new DomainRuleViolationException(
+                $"Não é possível alterar a ordem de {Status.GetDisplayName()} para {nextStatus.GetDisplayName()}.");
     }
 }

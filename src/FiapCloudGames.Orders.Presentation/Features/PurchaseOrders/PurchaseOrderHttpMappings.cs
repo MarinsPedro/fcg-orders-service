@@ -8,5 +8,5 @@ internal static class PurchaseOrderHttpMappings
         new(result.Id,
             result.CustomerId,
             result.CreatedAtUtc);
-            
+
 }

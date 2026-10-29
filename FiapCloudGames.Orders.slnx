@@ -9,4 +9,7 @@
     <Project Path="src/FiapCloudGames.Orders.Presentation/FiapCloudGames.Orders.Presentation.csproj" Id="93b45fb1-2332-4232-8b3f-079826deee5c" />
     <Project Path="src/FiapCloudGames.Orders.Worker/FiapCloudGames.Orders.Worker.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FiapCloudGames.Orders.UnitTests/FiapCloudGames.Orders.UnitTests.csproj" />
+  </Folder>
 </Solution>

@@ -8,7 +8,9 @@ internal sealed class CatalogClient(
 {
     private readonly CatalogApiOptions options = configuredOptions.Value;
 
-    public async Task<Game> GetGameByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ExternalApiResponse<Game>> GetGameByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
         // O Building Blocks consulta o Discovery do Identity na primeira vez,
         // pede o token por Client Credentials e reutiliza o token em memória.
@@ -28,10 +30,9 @@ internal sealed class CatalogClient(
         // TODO: rever este teste, pois tem erros que são na faixa 400..499, e eles não deveria retornar 500...
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(
-                $"A API Catalog respondeu com status {(int)response.StatusCode}.",
-                inner: null,
-                response.StatusCode);
+            return await ExternalApiResponseFactory.FailureAsync<Game>(
+                response,
+                cancellationToken);
         }
 
         var apiResponse = await response.Content.ReadFromJsonAsync<GameResponse>(cancellationToken);
@@ -45,12 +46,15 @@ internal sealed class CatalogClient(
             throw new HttpRequestException("A API Category retornou uma resposta inválida.");
         }
 
-        return new Game(apiResponse.Id,
-            apiResponse.Title,
-            apiResponse.Description,
-            apiResponse.Category,
-            apiResponse.BasePrice,
-            apiResponse.IsActive);
+        return ExternalApiResponseFactory.Success(
+            response.StatusCode,
+            new Game(
+                apiResponse.Id,
+                apiResponse.Title,
+                apiResponse.Description,
+                apiResponse.Category,
+                apiResponse.BasePrice,
+                apiResponse.IsActive));
     }
 
     private sealed record GameResponse(

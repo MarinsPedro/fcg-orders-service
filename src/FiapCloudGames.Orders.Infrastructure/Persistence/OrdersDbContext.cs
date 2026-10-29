@@ -1,9 +1,15 @@
 ﻿namespace FiapCloudGames.Orders.Infrastructure.Persistence;
 
-public sealed class OrdersDbContext(DbContextOptions<OrdersDbContext> options) : DbContext(options), IOrdersUnitOfWork
+public sealed class OrdersDbContext(DbContextOptions<OrdersDbContext> options) : DbContext(options)
 {
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
     public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+    public DbSet<PurchaseOrderGameReservation> PurchaseOrderGameReservations =>
+        Set<PurchaseOrderGameReservation>();
+    public DbSet<Orchestration.PurchaseOrderSagaState> PurchaseOrderSagaStates =>
+        Set<Orchestration.PurchaseOrderSagaState>();
+    public DbSet<Orchestration.PurchaseOrderSagaGame> PurchaseOrderSagaGames =>
+        Set<Orchestration.PurchaseOrderSagaGame>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
