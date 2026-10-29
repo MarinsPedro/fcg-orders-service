@@ -51,7 +51,6 @@ public sealed class InitializePurchaseOrderActivity(
                 order.Id,
                 order.CustomerId,
                 totalAmount,
-                $"order:{order.Id:N}:payment:v1",
                 now),
             publishContext =>
             {
