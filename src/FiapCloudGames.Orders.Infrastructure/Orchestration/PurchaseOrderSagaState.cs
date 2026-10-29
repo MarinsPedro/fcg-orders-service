@@ -7,7 +7,6 @@ public sealed class PurchaseOrderSagaState : SagaStateMachineInstance
     public Guid CorrelationId { get; set; }
     public string CurrentState { get; set; } = string.Empty;
     public Guid CustomerId { get; set; }
-    public Guid? PaymentId { get; set; }
     public decimal TotalAmount { get; set; }
     public int ExpectedGameCount { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }

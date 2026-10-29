@@ -34,7 +34,6 @@ public sealed class ApprovePurchaseOrderPaymentActivity(
 
         var now = clock.GetUtcNow();
         order.ChangeStatus(PurchaseOrderStatus.PaymentApproved, now);
-        context.Saga.PaymentId = context.Message.PaymentId;
         context.Saga.UpdatedAtUtc = now;
 
         foreach (var game in games)
@@ -57,8 +56,7 @@ public sealed class ApprovePurchaseOrderPaymentActivity(
         }
 
         logger.LogInformation(
-            "Pagamento {PaymentId} aprovado para a ordem {OrderId}; {GameCount} concessões solicitadas.",
-            context.Message.PaymentId,
+            "Pagamento aprovado para a ordem {OrderId}; {GameCount} concessões solicitadas.",
             context.Saga.CorrelationId,
             games.Length);
     }

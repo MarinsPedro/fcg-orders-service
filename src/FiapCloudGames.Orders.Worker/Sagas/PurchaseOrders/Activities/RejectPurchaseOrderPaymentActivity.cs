@@ -32,13 +32,11 @@ public sealed class RejectPurchaseOrderPaymentActivity(
         order.ChangeStatus(PurchaseOrderStatus.PaymentRejected, now);
         dbContext.PurchaseOrderGameReservations.RemoveRange(reservations);
 
-        context.Saga.PaymentId = context.Message.PaymentId;
         context.Saga.UpdatedAtUtc = now;
         context.Saga.CompletedAtUtc = now;
 
         logger.LogWarning(
-            "Pagamento {PaymentId} rejeitado para a ordem {OrderId}. Motivo: {RejectionReason}",
-            context.Message.PaymentId,
+            "Pagamento rejeitado para a ordem {OrderId}. Motivo: {RejectionReason}",
             context.Saga.CorrelationId,
             context.Message.RejectionReason);
     }

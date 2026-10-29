@@ -20,8 +20,6 @@ internal sealed class PurchaseOrderSagaStateConfiguration :
         builder.Property(state => state.CustomerId)
             .HasColumnName("customer_id")
             .IsRequired();
-        builder.Property(state => state.PaymentId)
-            .HasColumnName("payment_id");
         builder.Property(state => state.TotalAmount)
             .HasColumnName("total_amount")
             .HasPrecision(12, 2)

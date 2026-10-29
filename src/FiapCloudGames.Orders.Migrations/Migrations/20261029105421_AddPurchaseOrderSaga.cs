@@ -41,7 +41,6 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                     correlation_id = table.Column<Guid>(type: "uuid", nullable: false),
                     current_state = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     customer_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    payment_id = table.Column<Guid>(type: "uuid", nullable: true),
                     total_amount = table.Column<decimal>(type: "numeric(12,2)", precision: 12, scale: 2, nullable: false),
                     expected_game_count = table.Column<int>(type: "integer", nullable: false),
                     created_at_utc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),

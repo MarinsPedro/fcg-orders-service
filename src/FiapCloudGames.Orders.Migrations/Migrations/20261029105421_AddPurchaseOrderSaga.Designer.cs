@@ -181,10 +181,6 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("expected_game_count");
 
-                    b.Property<Guid?>("PaymentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("payment_id");
-
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)")
