@@ -27,9 +27,7 @@ public sealed class GrantPurchaseOrderGameActivity(
             ?? throw new InvalidOperationException(
                 $"O jogo {context.Message.GameId} não pertence à ordem {context.Saga.CorrelationId}.");
 
-        var grantedNow = grantedGame.MarkGranted(
-            context.Message.LibraryEntryId,
-            context.Message.GrantedAtUtc);
+        var grantedNow = grantedGame.MarkGranted(context.Message.GrantedAtUtc);
 
         var persistedGrantedCount = await dbContext.PurchaseOrderSagaGames
             .CountAsync(

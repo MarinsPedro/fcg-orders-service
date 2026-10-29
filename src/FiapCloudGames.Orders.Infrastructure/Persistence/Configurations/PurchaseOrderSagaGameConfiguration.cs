@@ -21,8 +21,6 @@ internal sealed class PurchaseOrderSagaGameConfiguration :
             .HasColumnName("status")
             .HasConversion<short>()
             .IsRequired();
-        builder.Property(game => game.LibraryEntryId)
-            .HasColumnName("library_entry_id");
         builder.Property(game => game.RequestedAtUtc)
             .HasColumnName("requested_at_utc");
         builder.Property(game => game.GrantedAtUtc)

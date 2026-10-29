@@ -19,7 +19,6 @@ public sealed class PurchaseOrderSagaGame
     public Guid OrderItemId { get; private set; }
     public Guid GameId { get; private set; }
     public PurchaseOrderSagaGameStatus Status { get; private set; }
-    public Guid? LibraryEntryId { get; private set; }
     public DateTimeOffset? RequestedAtUtc { get; private set; }
     public DateTimeOffset? GrantedAtUtc { get; private set; }
 
@@ -38,9 +37,7 @@ public sealed class PurchaseOrderSagaGame
         RequestedAtUtc = requestedAtUtc;
     }
 
-    public bool MarkGranted(
-        Guid libraryEntryId,
-        DateTimeOffset grantedAtUtc)
+    public bool MarkGranted(DateTimeOffset grantedAtUtc)
     {
         if (Status == PurchaseOrderSagaGameStatus.Granted)
             return false;
@@ -50,7 +47,6 @@ public sealed class PurchaseOrderSagaGame
                 $"O jogo {GameId} da ordem {OrderId} ainda não foi solicitado à biblioteca.");
 
         Status = PurchaseOrderSagaGameStatus.Granted;
-        LibraryEntryId = libraryEntryId;
         GrantedAtUtc = grantedAtUtc;
         return true;
     }

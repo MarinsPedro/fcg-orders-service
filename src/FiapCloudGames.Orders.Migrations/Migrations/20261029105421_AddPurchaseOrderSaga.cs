@@ -62,7 +62,6 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                     game_id = table.Column<Guid>(type: "uuid", nullable: false),
                     order_item_id = table.Column<Guid>(type: "uuid", nullable: false),
                     status = table.Column<short>(type: "smallint", nullable: false),
-                    library_entry_id = table.Column<Guid>(type: "uuid", nullable: true),
                     requested_at_utc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     granted_at_utc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },

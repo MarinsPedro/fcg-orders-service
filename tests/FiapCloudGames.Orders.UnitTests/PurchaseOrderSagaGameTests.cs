@@ -10,14 +10,12 @@ public sealed class PurchaseOrderSagaGameTests
         var game = CreateSagaGame();
         var requestedAt = UtcNow();
         var grantedAt = requestedAt.AddSeconds(1);
-        var libraryEntryId = Guid.NewGuid();
 
         game.MarkRequested(requestedAt);
-        var grantedNow = game.MarkGranted(libraryEntryId, grantedAt);
+        var grantedNow = game.MarkGranted(grantedAt);
 
         Assert.True(grantedNow);
         Assert.Equal(PurchaseOrderSagaGameStatus.Granted, game.Status);
-        Assert.Equal(libraryEntryId, game.LibraryEntryId);
         Assert.Equal(requestedAt, game.RequestedAtUtc);
         Assert.Equal(grantedAt, game.GrantedAtUtc);
     }
@@ -26,15 +24,13 @@ public sealed class PurchaseOrderSagaGameTests
     public void MarkGranted_ShouldIgnoreDuplicatedResponse()
     {
         var game = CreateSagaGame();
-        var firstLibraryEntryId = Guid.NewGuid();
         game.MarkRequested(UtcNow());
-        var firstGrant = game.MarkGranted(firstLibraryEntryId, UtcNow().AddSeconds(1));
+        var firstGrant = game.MarkGranted(UtcNow().AddSeconds(1));
 
-        var duplicatedGrant = game.MarkGranted(Guid.NewGuid(), UtcNow().AddSeconds(2));
+        var duplicatedGrant = game.MarkGranted(UtcNow().AddSeconds(2));
 
         Assert.True(firstGrant);
         Assert.False(duplicatedGrant);
-        Assert.Equal(firstLibraryEntryId, game.LibraryEntryId);
         Assert.Equal(UtcNow().AddSeconds(1), game.GrantedAtUtc);
     }
 
@@ -44,7 +40,7 @@ public sealed class PurchaseOrderSagaGameTests
         var game = CreateSagaGame();
 
         Assert.Throws<InvalidOperationException>(
-            () => game.MarkGranted(Guid.NewGuid(), UtcNow()));
+            () => game.MarkGranted(UtcNow()));
     }
 
     private static PurchaseOrderSagaGame CreateSagaGame() =>

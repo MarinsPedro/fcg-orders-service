@@ -126,10 +126,6 @@ namespace FiapCloudGames.Orders.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("granted_at_utc");
 
-                    b.Property<Guid?>("LibraryEntryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("library_entry_id");
-
                     b.Property<Guid>("OrderItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("order_item_id");
