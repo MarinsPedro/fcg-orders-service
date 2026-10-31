@@ -17,7 +17,7 @@ public sealed class PurchaseOrder
         CustomerId = customerId;
         Status = PurchaseOrderStatus.Received;
         CreatedAtUtc = ValidateCreatedAt(createdAtUtc);
-        Items = itens;
+        Items = itens.ToList();
     }
 
     public Guid Id { get; private set; }
@@ -28,7 +28,7 @@ public sealed class PurchaseOrder
 
     #region Naviations
 
-    public IEnumerable<PurchaseOrderItem> Items { get; private set; } = Enumerable.Empty<PurchaseOrderItem>();
+    public IEnumerable<PurchaseOrderItem> Items { get; private set; } = new List<PurchaseOrderItem>();
 
     #endregion
 

@@ -84,6 +84,8 @@ public static class DependencyInjection
 
         services.AddMassTransit(configurator =>
         {
+            configurator.AddConsumer<PaymentOutcomeConsumer>();
+            configurator.AddConsumer<LibraryGrantConsumer>();
             configurator.AddDelayedMessageScheduler();
             configurator.AddSagaStateMachine<
                     PurchaseOrderStateMachine,
@@ -123,6 +125,44 @@ public static class DependencyInjection
                         hostConfiguration.Password(options.Password);
                     });
 
+                // Filas duraveis ja provisionadas por rabbitmq/definitions.json.
+                // Os endpoints usam JSON puro; a saga continua usando eventos internos MT.
+                rabbitMq.ReceiveEndpoint("fcg.orders.payments", endpoint =>
+                {
+                    endpoint.ConfigureConsumeTopology = false;
+                    endpoint.UseRawJsonDeserializer(RawSerializerOptions.All, isDefault: true);
+                    endpoint.UseMessageRetry(retry => retry.Intervals(
+                        TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(5)));
+                    endpoint.UseEntityFrameworkOutbox<OrdersDbContext>(context);
+                    endpoint.Bind("fcg.payments.events", binding =>
+                    {
+                        binding.ExchangeType = "topic";
+                        binding.RoutingKey = "payments.paid";
+                    });
+                    endpoint.Bind("fcg.payments.events", binding =>
+                    {
+                        binding.ExchangeType = "topic";
+                        binding.RoutingKey = "payments.failed";
+                    });
+                    endpoint.ConfigureConsumer<PaymentOutcomeConsumer>(context);
+                });
+
+                rabbitMq.ReceiveEndpoint("fcg.orders.library", endpoint =>
+                {
+                    endpoint.ConfigureConsumeTopology = false;
+                    endpoint.UseRawJsonDeserializer(RawSerializerOptions.All, isDefault: true);
+                    endpoint.UseMessageRetry(retry => retry.Intervals(
+                        TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(5)));
+                    endpoint.UseEntityFrameworkOutbox<OrdersDbContext>(context);
+                    endpoint.Bind("fcg.library.events", binding =>
+                    {
+                        binding.ExchangeType = "topic";
+                        binding.RoutingKey = "library.game.granted";
+                    });
+                    endpoint.ConfigureConsumer<LibraryGrantConsumer>(context);
+                });
+
+                // MassTransit configura a fila propria da saga usando os contratos internos.
                 rabbitMq.ConfigureEndpoints(context);
             });
         });

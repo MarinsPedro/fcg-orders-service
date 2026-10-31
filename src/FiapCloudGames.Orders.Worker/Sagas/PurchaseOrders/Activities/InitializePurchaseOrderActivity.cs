@@ -51,6 +51,7 @@ public sealed class InitializePurchaseOrderActivity(
                 order.Id,
                 order.CustomerId,
                 totalAmount,
+                $"orders:{order.Id:N}",
                 now),
             publishContext =>
             {

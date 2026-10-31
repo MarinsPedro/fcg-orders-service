@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+  namespace: fcg
+spec:
+  selector:
+    app: orders-api
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-api
+  namespace: fcg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-api
+  template:
+    metadata:
+      labels:
+        app: orders-api
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: orders-api
+        image: fcg-orders-api:local
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: ASPNETCORE_URLS
+          value: http://+:8080
+        - name: ConnectionStrings__Database
+          valueFrom:
+            secretKeyRef:
+              name: fcg-domain-dev-secrets
+              key: orders-connection-string
+        - name: Authentication__Authority
+          value: http://identity-api:8080
+        - name: Authentication__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: fcg-config
+              key: identity-issuer
+        - name: Authentication__Audience
+          value: orders-api
+        - name: Authentication__RequireHttpsMetadata
+          value: 'false'
+        - name: RabbitMq__Host
+          value: rabbitmq
+        - name: RabbitMq__Port
+          value: '5672'
+        - name: RabbitMq__VirtualHost
+          value: /
+        - name: RabbitMq__Username
+          valueFrom:
+            secretKeyRef:
+              name: fcg-dev-secrets
+              key: rabbitmq-username
+        - name: RabbitMq__Password
+          valueFrom:
+            secretKeyRef:
+              name: fcg-dev-secrets
+              key: rabbitmq-password
+        - name: ServiceAuthentication__Authority
+          value: http://identity-api:8080
+        - name: ServiceAuthentication__TokenEndpoint
+          value: http://identity-api:8080/oauth2/token
+        - name: ServiceAuthentication__ClientId
+          value: orders-api
+        - name: ServiceAuthentication__ClientSecret
+          valueFrom:
+            secretKeyRef:
+              name: fcg-domain-dev-secrets
+              key: orders-client-secret
+        - name: ServiceAuthentication__RequireHttps
+          value: 'false'
+        - name: CatalogApi__BaseAddress
+          value: http://catalog-api:8080/
+        - name: CatalogApi__Audience
+          value: catalog-api
+        - name: CatalogApi__Scopes
+          value: catalog.games.read
+        - name: PromotionsApi__BaseAddress
+          value: http://promotions-api:8080/
+        - name: PromotionsApi__Audience
+          value: promotions-api
+        - name: PromotionsApi__Scopes
+          value: promotions.calculate promotions.campaigns.read
+        - name: LibraryApi__BaseAddress
+          value: http://library-api:8080/
+        - name: LibraryApi__Audience
+          value: library-api
+        - name: LibraryApi__Scopes
+          value: library.ownership.read
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 750m
+            memory: 768Mi
+        ports:
+        - name: http
+          containerPort: 8080
+        startupProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          periodSeconds: 5
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 6
