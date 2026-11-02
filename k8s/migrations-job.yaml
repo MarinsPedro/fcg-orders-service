@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: orders-migrations
+  namespace: fcg
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrations
+        image: fcg-orders-migrations:local
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ORDERS_MIGRATIONS_CONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: fcg-domain-dev-secrets
+              key: orders-connection-string
+        envFrom:
+        - configMapRef:
+            name: fcg-orders-migrations-config
