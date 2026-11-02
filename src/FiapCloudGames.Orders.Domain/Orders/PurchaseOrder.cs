@@ -5,6 +5,8 @@
 /// </summary>
 public sealed class PurchaseOrder
 {
+    private readonly List<PurchaseOrderItem> _items = [];
+
     public PurchaseOrder() { }
 
     private PurchaseOrder(
@@ -17,7 +19,7 @@ public sealed class PurchaseOrder
         CustomerId = customerId;
         Status = PurchaseOrderStatus.Received;
         CreatedAtUtc = ValidateCreatedAt(createdAtUtc);
-        Items = itens;
+        _items.AddRange(itens);
     }
 
     public Guid Id { get; private set; }
@@ -28,7 +30,7 @@ public sealed class PurchaseOrder
 
     #region Naviations
 
-    public IEnumerable<PurchaseOrderItem> Items { get; private set; } = Enumerable.Empty<PurchaseOrderItem>();
+    public IReadOnlyCollection<PurchaseOrderItem> Items => _items;
 
     #endregion
 

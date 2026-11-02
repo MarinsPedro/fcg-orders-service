@@ -33,6 +33,7 @@ public sealed class InitializePurchaseOrderActivity(
 
         var now = clock.GetUtcNow();
         var totalAmount = items.Sum(item => item.FinalPrice.Amount);
+        var idempotencyKey = $"payment:{order.Id:N}";
 
         context.Saga.CustomerId = order.CustomerId;
         context.Saga.TotalAmount = totalAmount;
@@ -51,6 +52,7 @@ public sealed class InitializePurchaseOrderActivity(
                 order.Id,
                 order.CustomerId,
                 totalAmount,
+                idempotencyKey,
                 now),
             publishContext =>
             {

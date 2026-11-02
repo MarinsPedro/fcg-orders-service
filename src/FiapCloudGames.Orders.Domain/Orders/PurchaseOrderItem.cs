@@ -67,7 +67,7 @@ public class PurchaseOrderItem
 
     #region Navigations
 
-    public PurchaseOrder PurchaseOrder { get; private set; } = new();
+    public PurchaseOrder PurchaseOrder { get; private set; } = null!;
 
     #endregion
 }
